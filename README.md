@@ -19,22 +19,15 @@ code/
 └── README.md               # This file
 ```
 
-## Prerequisites
+## Installation
 
-Before running the scripts, ensure you have:
-
-**OpenRLHF installed**: 
-cd OpenRLHF
+Before running the scripts, ensure you have the environment installed: 
+```
+git clone https://github.com/stevie1023/InTRO.git
+cd InTRO
 pip install -e .
-Follow the main [OpenRLHF installation guide](../README.md). Please note that we use an earlier version of 0.6.2 compared to the current version in the official OpenRLHF repo(0.0.1), which have difference in implementation details, so please 
-
-
-## Hardware Requirements
-
-- **Training**: 5+ GPUs (A100 80GB recommended)
-- **Evaluation**: 1+ GPUs for model inference
-- **Memory**: At least 64GB system RAM
-- **Storage**: Sufficient space for model checkpoints and datasets
+```
+For more details, please refer to the [OpenRLHF](https://github.com/OpenRLHF/OpenRLHF) installation guide. Note that this codebase targets OpenRLHF v0.6.2, which differs from the current version in the official OpenRLHF repository (v0.9.1) and includes implementation changes. If you use a newer OpenRLHF release, you may need to update the code accordingly. Please also ensure that your dependencies match the specific OpenRLHF version/repository you are using.
 
 ## Quick Start
 
@@ -60,23 +53,8 @@ This script:
 Navigate to the examples directory and run the training script:
 
 ```bash
-cd examples
-bash a_train_InTRO_math_ray.sh
+bash examples/a_train_InTRO_math_ray.sh
 ```
-
-#### Key Training Parameters
-
-The training script includes several important configurations:
-
-- **Model**: Qwen2.5-1.5B as the base model
-- **Hardware**: 5 GPUs (3,4,5,6,7) with Ray distributed computing
-- **Batch sizes**: 
-  - Micro train batch: 2
-  - Train batch: 128
-  - Rollout batch: 1024
-- **Learning rates**: 
-  - Actor: 5e-7
-- **Optimization**: DeepSpeed ZeRO Stage 3, FlashAttention, gradient checkpointing
 
 #### Customizing Training
 
@@ -88,6 +66,10 @@ To modify training parameters, edit the following in `a_train_InTRO_math_ray.sh`
 - **Learning rates**: Modify `--actor_learning_rate` and `--critic_learning_rate`
 - **Data path**: Update `--prompt_data` to point to your processed dataset
 
+  
+Please note that we **do not apply any prompt templates** during either training or evaluation, as this yields better performance in our setting. If you choose to use a specific template, you may need to modify how the answer is concatenated with the query when estimating the posterior during experience generation.
+
+
 ### 3. Evaluation
 
 After training, evaluate your model on the math dataset:
@@ -96,9 +78,4 @@ After training, evaluate your model on the math dataset:
 cd eval/Qwen2.5-Math/evaluation
 bash sh/run_eval_qwen2_math.sh
 ```
-
-The evaluation script:
-- Tests multiple model sizes (1.5B, 7B, 72B)
-- Uses different prompt templates
-- Generates comprehensive evaluation metrics
 
