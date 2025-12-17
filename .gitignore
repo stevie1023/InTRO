@@ -1,0 +1,49 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.so
+
+# venv / conda
+.venv/
+venv/
+env/
+.conda/
+
+# build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# caches / tooling
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# logs / temp
+*.log
+*.tmp
+
+# ---- Project outputs ----
+runs/
+wandb/
+tensorboard/
+ckpt/
+
+# ---- Node / frontend ----
+node_modules/
+node
+npm
+node.usrbin/
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+.DS_Store
+
+# ---- Secrets ----
+.env
+*.key
+*.pem
