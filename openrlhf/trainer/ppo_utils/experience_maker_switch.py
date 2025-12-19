@@ -836,22 +836,16 @@ class RemoteExperienceMaker(NaiveExperienceMaker):
 
 
 
-        ##### 使用新的处理方法
-        # 1. 将原始序列解码为文本
+        ##### customized way of handling the x+y part for calculating w later in the loss ###############
+      
         queries = self.tokenizer.batch_decode(sequences.cpu(), skip_special_tokens=False)
         answers =samples.labels
         
-         
         reverse_sequences = []
-
-        # 在重组序列的循环中计算新的长度
         new_packed_seq_lens = []
-
-        print("sequences",sequences.shape)
-        
-        # 修改循环部分
         sequences_list = []
         attention_mask_list = []
+        
         offset = 0
         tokens_list = sequences.tolist()[0]
         attention_list = attention_mask.tolist()[0]
@@ -861,43 +855,27 @@ class RemoteExperienceMaker(NaiveExperienceMaker):
             offset += length
         for i, (seq, attn_mask) in enumerate(zip(sequences_list, attention_mask_list)):
                 if isinstance(samples.num_actions, int):
-                    # 如果 num_actions 是整数，表示所有样本的响应长度相同
                     response_len = samples.num_actions
                 else:
-                    # 如果 num_actions 是张量，表示每个样本的响应长度可能不同
                     response_len = samples.num_actions[i]
-                # 计算 z 的起始和结束位置
+            
                 z_start = len(seq) - response_len
                 z_end = len(seq) - 1
-                # 提取x部分
+                
                 x_part = seq[:z_start]
 
                 #####if use template
                 if self.strategy.args.input_template is not None:
-                    # Decode token IDs to text first
-                    x_part=x_part
+                    #####note that this template should be modified according to different user templates to bring outthe  best possible performance.
                     answer_part = f"IMPORTANT: The correct final answer is \\boxed{{{answers[i]}}}. Your task is to provide a logically valid derivation that leads to this answer WITHOUT assuming it or working backwards from it. "
-                    # x_part=x_part[:-3]###r1 template
-                    # answer_part=" <answer> "+answers[i]+" </answer>\\nAssistant:"
                 else:
                     x_part = x_part
                     answer_part=" ###Answer:"+answers[i]+" ###Solution:"
-                # answer_part="The answer to this question is "+answers[i]+". Next, please solve the question step by step."
-                # if self.strategy.args.apply_chat_template:
-                #     x_part=x_part[:-5]
-                #     answer_part=answer_part+self.tokenizer.decode(x_part[-5:])
                     
-                # breakpoint()
-                # x_attn_mask = attn_mask[:z_start]
                 
-                # 提取z部分z
                 z_part = seq[z_start:z_end+1]
-                # z_attn_mask = attn_mask[z_start:z_end+1]
-                
-                # 计算各部分长度
+
                 x_len = len(x_part)
-                
-                # 2对答案进行编码
                 answer_inputs = self.tokenizer(
                     answer_part,
                     add_special_tokens=False,
@@ -909,31 +887,20 @@ class RemoteExperienceMaker(NaiveExperienceMaker):
 
                 y_len = answer_inputs["input_ids"].shape[1]
                 z_len = z_end - z_start + 1
-                # 新的总长度
+  
                 new_len = x_len + y_len + z_len
                 new_packed_seq_lens.append(new_len)
 
                 #breakpoint()
                 # assert new_len == y_len+packed_seq_lens[i]
                 
-                # # 获取y部分的attention mask
-                # y_attn_mask = torch.ones_like(answer_inputs["input_ids"][i])
-                
-                # 组合x+y+z
-                # breakpoint()
                 x_part_tensor = torch.tensor(x_part, device=answer_inputs["input_ids"].device).unsqueeze(0)
                 z_part_tensor = torch.tensor(z_part, device=answer_inputs["input_ids"].device).unsqueeze(0)
                 
                 new_seq = torch.cat([x_part_tensor, answer_inputs["input_ids"], z_part_tensor],dim=1)
-                # breakpoint()
+
                 reverse_sequences.append(new_seq)
-                
-                # # 组合attention mask
-                # z_attn_mask_tensor = torch.tensor(z_attn_mask, device=answer_inputs["input_ids"][i].device)
-                # x_attn_mask_tensor = torch.tensor(x_attn_mask, device=answer_inputs["input_ids"][i].device)
-                # new_attn_mask = torch.cat([x_attn_mask_tensor, y_attn_mask.unsqueeze(0), z_attn_mask_tensor])
-                # reverse_attention_mask.append(new_attn_mask)
-                
+
                 
         reverse_sequences = torch.cat(reverse_sequences, dim=1)
 
